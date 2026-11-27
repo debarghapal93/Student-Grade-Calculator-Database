@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Records</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="table-container">
+    <h1>Student Records</h1>
+
+    <div id="statusMessage" class="alert" style="display: none;"></div>
+    
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search by roll no or name">
+      <button type="button" id="searchBtn">Search</button>
+      <button type="button" id="clearBtn" style="display: none; background: #718096;">Clear</button>
+      <a href="index.html">+ Add New</a>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Roll No</th>
+          <th>Name</th>
+          <th>Class</th>
+          <th>Total</th>
+          <th>%</th>
+          <th>Grade</th>
+          <th>Result</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="recordsBody">
+        <tr>
+          <td colspan="8" class="empty-state">Loading student records...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const recordsBody = document.getElementById('recordsBody');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusMessage = document.getElementById('statusMessage');
+
+    function showStatus(text, type = 'success') {
+      statusMessage.textContent = text;
+      statusMessage.className = `alert alert-${type}`;
+      statusMessage.style.display = 'block';
+      setTimeout(() => {
+        statusMessage.style.display = 'none';
+      }, 3500);
+    }
+
+    // Helper to safely escape HTML and prevent XSS
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    async function loadRecords(query = '') {
+      try {
+        const url = query ? `/api/records?q=${encodeURIComponent(query)}` : '/api/records';
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!res.ok) {
+          recordsBody.innerHTML = `<tr><td colspan="8" class="empty-state" style="color: #c53030;">${escapeHtml(data.error || 'Failed to load records.')}</td></tr>`;
+          return;
+        }
+
+        const records = data.records || [];
+        if (records.length === 0) {
+          recordsBody.innerHTML = `<tr><td colspan="8" class="empty-state">${query ? 'No matching records found.' : 'No student records found yet. Click "+ Add New" to add one.'}</td></tr>`;
+          return;
+        }
+
+        recordsBody.innerHTML = records.map(r => {
+          const badgeClass = r.result === 'Pass' ? 'badge-pass' : 'badge-fail';
+          const pct = typeof r.percentage === 'number' ? r.percentage.toFixed(2) : parseFloat(r.percentage).toFixed(2);
+          return `
+            <tr>
+              <td><strong>${escapeHtml(r.roll_no)}</strong></td>
+              <td>${escapeHtml(r.name)}</td>
+              <td>${escapeHtml(r.class_name)}</td>
+              <td>${escapeHtml(r.total)} / 500</td>
+              <td>${pct}%</td>
+              <td><strong>${escapeHtml(r.grade)}</strong></td>
+              <td><span class="badge ${badgeClass}">${escapeHtml(r.result)}</span></td>
+              <td>
+                <button type="button" class="btn-danger" onclick="deleteRecord(${r.id}, '${escapeHtml(r.name).replace(/'/g, "\\'")}')">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Fetch error:', err);
+        recordsBody.innerHTML = '<tr><td colspan="8" class="empty-state" style="color:#c53030;">Error connecting to API. Please verify server status.</td></tr>';
+      }
+    }
+
+    async function deleteRecord(id, studentName) {
+      if (!confirm(`Are you sure you want to delete the record for "${studentName}"?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showStatus(`Record for "${studentName}" was deleted successfully.`, 'success');
+          loadRecords(searchInput.value.trim());
+        } else {
+          showStatus(data.error || 'Failed to delete record.', 'error');
+        }
+      } catch (err) {
+        console.error('Delete error:', err);
+        showStatus('Network error while deleting record.', 'error');
+      }
+    }
+
+    searchBtn.addEventListener('click', () => {
+      const q = searchInput.value.trim();
+      clearBtn.style.display = q ? 'inline-block' : 'none';
+      loadRecords(q);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const q = searchInput.value.trim();
+        clearBtn.style.display = q ? 'inline-block' : 'none';
+        loadRecords(q);
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      clearBtn.style.display = 'none';
+      loadRecords('');
+    });
+
+    // Initial fetch on page load
+    loadRecords();
+  </script>
+</body>
+</html>
