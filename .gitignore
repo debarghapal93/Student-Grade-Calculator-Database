@@ -1,11 +1,20 @@
-# SQLite database from local testing server
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Vercel build output
+.vercel
+
+# Local SQLite test database
 students.db
 
-# Python cache
+# Python & OS cache
 __pycache__/
 *.pyc
-
-# OS & Editor generated files
 .DS_Store
 Thumbs.db
 .vscode/
