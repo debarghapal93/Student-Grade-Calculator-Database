@@ -3,75 +3,72 @@ const { validateAndCalculate } = require('./lib/grade');
 const { query } = require('./lib/db');
 
 async function runTests() {
-  console.log('🧪 Starting automated tests...\n');
+  console.log('🧪 Starting PostgreSQL Automated Test Suite...\n');
 
-  // Test 1: Valid record (78, 85, 69, 72, 91 -> total 395, 79.00%, A, Pass)
-  console.log('Test 1: Valid record calculation (78, 85, 69, 72, 91)');
+  // Test 1: Valid record (87, 88, 95, 93, 79 -> 442/500, 88.40%, grade A+, Pass)
+  console.log('Test 1: Valid record calculation (87, 88, 95, 93, 79)');
   const res1 = validateAndCalculate({
-    roll_no: 'TEST-001',
+    roll_no: 'TEST-884',
     name: 'Debargha Pal',
     class_name: 'CSE-5A',
-    web_tech: 78,
-    dbms: 85,
-    os: 69,
-    data_structures: 72,
-    maths: 91,
+    web_tech: 87,
+    dbms: 88,
+    os: 95,
+    data_structures: 93,
+    maths: 79,
   });
-  assert.strictEqual(res1.error, undefined, 'Should not return error');
-  assert.strictEqual(res1.student.total, 395, 'Total must be 395');
-  assert.strictEqual(res1.student.percentage, 79.00, 'Percentage must be 79.00');
-  assert.strictEqual(res1.student.grade, 'A', 'Grade must be A');
+  assert.strictEqual(res1.error, undefined, 'Should not return validation error');
+  assert.strictEqual(res1.student.total, 442, 'Total marks must be exactly 442');
+  assert.strictEqual(res1.student.percentage, 88.40, 'Percentage must be exactly 88.40');
+  assert.strictEqual(res1.student.grade, 'A+', 'Grade must be A+');
   assert.strictEqual(res1.student.result, 'Pass', 'Result must be Pass');
-  console.log('✓ Passed: Total 395, 79.00%, Grade A, Result Pass\n');
+  console.log('✓ Passed: Total 442/500, 88.40%, Grade A+, Result Pass\n');
 
-  // Test 2: One mark below 35 (Subject failure rule)
+  // Test 2: Subject failure rule (one mark below 35 -> F/Fail)
   console.log('Test 2: Subject failure rule (one mark below 35 -> F/Fail)');
   const res2 = validateAndCalculate({
-    roll_no: 'TEST-002',
-    name: 'Jane Smith',
+    roll_no: 'TEST-FAIL',
+    name: 'Sample Student',
     class_name: 'CSE-5A',
     web_tech: 34,
     dbms: 95,
-    os: 90,
-    data_structures: 88,
-    maths: 92,
+    os: 92,
+    data_structures: 90,
+    maths: 94,
   });
-  assert.strictEqual(res2.student.grade, 'F', 'Grade must be F despite high average');
-  assert.strictEqual(res2.student.result, 'Fail', 'Result must be Fail');
-  console.log('✓ Passed: Grade F, Result Fail when any subject < 35\n');
+  assert.strictEqual(res2.student.grade, 'F', 'Grade must be F when any subject < 35');
+  assert.strictEqual(res2.student.result, 'Fail', 'Result must be Fail when any subject < 35');
+  console.log('✓ Passed: Individual subject mark < 35 results in Grade F and Result Fail\n');
 
-  // Test 3: Out of range marks (> 100 or negative)
-  console.log('Test 3: Reject out-of-range marks (> 100 or negative)');
+  // Test 3: Invalid marks rejected (> 100 or negative or non-integer)
+  console.log('Test 3: Reject invalid marks (> 100, negative, non-numeric)');
   const res3High = validateAndCalculate({
-    roll_no: 'TEST-003',
+    roll_no: 'TEST-HIGH',
     name: 'Invalid Student',
-    class_name: 'CSE-5A',
-    web_tech: 101,
+    class_name: 'CSE',
+    web_tech: 105,
     dbms: 80,
     os: 80,
     data_structures: 80,
     maths: 80,
   });
-  assert.ok(res3High.error, 'Should reject marks > 100');
+  assert.ok(res3High.error, 'Must reject mark > 100');
 
   const res3Low = validateAndCalculate({
-    roll_no: 'TEST-004',
+    roll_no: 'TEST-LOW',
     name: 'Invalid Student',
-    class_name: 'CSE-5A',
-    web_tech: -5,
+    class_name: 'CSE',
+    web_tech: -10,
     dbms: 80,
     os: 80,
     data_structures: 80,
     maths: 80,
   });
-  assert.ok(res3Low.error, 'Should reject negative marks');
+  assert.ok(res3Low.error, 'Must reject negative mark');
   console.log('✓ Passed: Out of range marks properly rejected\n');
 
-  // Test 4: Database operations (Insert, Duplicate, Search, Delete)
-  console.log('Test 4: Database insertion and duplicate check');
-  // Clean up any test records first
-  await query('DELETE FROM students WHERE roll_no LIKE $1', ['TEST-%']);
-
+  // Test 4: Database insertion and duplicate roll number constraint
+  console.log('Test 4: PostgreSQL insertion and duplicate roll number handling');
   const insertSql = `
     INSERT INTO students (
       roll_no, name, class_name, web_tech, dbms, os, data_structures, maths, total, percentage, grade, result
@@ -87,9 +84,9 @@ async function runTests() {
   ]);
   assert.strictEqual(dbRes1.rows.length, 1, 'Should insert 1 row');
   const insertedId = dbRes1.rows[0].id;
-  console.log(`✓ Passed: Record inserted with ID ${insertedId}`);
+  console.log(`✓ Passed: Record inserted into PostgreSQL with ID ${insertedId}`);
 
-  // Test duplicate roll number
+  // Test duplicate roll number (Error code 23505)
   let duplicateCaught = false;
   try {
     await query(insertSql, [
@@ -102,25 +99,33 @@ async function runTests() {
       duplicateCaught = true;
     }
   }
-  assert.strictEqual(duplicateCaught, true, 'Duplicate roll number must trigger unique constraint');
+  assert.strictEqual(duplicateCaught, true, 'Duplicate roll number must trigger unique constraint (23505)');
   console.log('✓ Passed: Duplicate roll number correctly caught and rejected\n');
 
-  // Test 5: Search
-  console.log('Test 5: Search record by name or roll number');
-  const searchRes = await query('SELECT * FROM students WHERE LOWER(roll_no) LIKE $1 OR LOWER(name) LIKE $1', ['%debargha%']);
-  assert.ok(searchRes.rows.length >= 1, 'Should find at least 1 record');
-  console.log(`✓ Passed: Search returned ${searchRes.rows.length} record(s)\n`);
+  // Test 5: Search query using ILIKE
+  console.log('Test 5: Search record by name or roll number using ILIKE');
+  const searchSql = `
+    SELECT id, roll_no, name, class_name, total, percentage, grade, result
+    FROM students
+    WHERE roll_no ILIKE $1 OR name ILIKE $1
+    ORDER BY id DESC
+  `;
+  const searchRes = await query(searchSql, ['%debargha%']);
+  assert.ok(searchRes.rows.length >= 1, 'Search query should return matching student');
+  assert.strictEqual(searchRes.rows[0].roll_no, 'TEST-884', 'Search returned matching roll number');
+  console.log(`✓ Passed: ILIKE search returned ${searchRes.rows.length} matching record(s)\n`);
 
-  // Test 6: Delete
-  console.log('Test 6: Delete record by ID');
+  // Test 6: Delete record by ID
+  console.log('Test 6: Delete record by ID using parameterized query');
   const delRes = await query('DELETE FROM students WHERE id = $1 RETURNING id', [insertedId]);
   assert.strictEqual(delRes.rows.length, 1, 'Should delete 1 row');
-  console.log(`✓ Passed: Record ${insertedId} successfully deleted\n`);
+  assert.strictEqual(Number(delRes.rows[0].id), Number(insertedId), 'Deleted ID must match');
+  console.log(`✓ Passed: Record ID ${insertedId} successfully deleted\n`);
 
-  console.log('🎉 All tests passed successfully!');
+  console.log('🎉 All PostgreSQL tests passed successfully!');
 }
 
 runTests().catch(err => {
-  console.error('❌ Test failed:', err);
+  console.error('❌ Test execution failed:', err);
   process.exit(1);
 });

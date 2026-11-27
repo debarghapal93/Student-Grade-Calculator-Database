@@ -1,9 +1,8 @@
--- PostgreSQL Schema / Migration for Student Marks and Grade Calculator
--- Compatible with Neon Postgres, Supabase, and standard PostgreSQL 12+
-
+-- Neon Postgres Schema for Student Marks and Grade Calculator
+-- See db/schema.sql for the canonical schema definition
 CREATE TABLE IF NOT EXISTS students (
     id SERIAL PRIMARY KEY,
-    roll_no VARCHAR(20) NOT NULL UNIQUE,
+    roll_no VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
     class_name VARCHAR(50) NOT NULL,
     web_tech SMALLINT NOT NULL CHECK (web_tech >= 0 AND web_tech <= 100),
@@ -15,9 +14,8 @@ CREATE TABLE IF NOT EXISTS students (
     percentage NUMERIC(5,2) NOT NULL,
     grade VARCHAR(2) NOT NULL,
     result VARCHAR(4) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Index on roll_no and name for fast search
 CREATE INDEX IF NOT EXISTS idx_students_roll_no ON students (roll_no);
 CREATE INDEX IF NOT EXISTS idx_students_name ON students (name);

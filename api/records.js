@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const q = typeof req.query?.q === 'string' ? req.query.q.trim() : '';
 
     let sql;
     let params = [];
@@ -24,10 +24,10 @@ module.exports = async function handler(req, res) {
       sql = `
         SELECT id, roll_no, name, class_name, web_tech, dbms, os, data_structures, maths, total, percentage, grade, result, created_at
         FROM students
-        WHERE LOWER(roll_no) LIKE $1 OR LOWER(name) LIKE $1
+        WHERE roll_no ILIKE $1 OR name ILIKE $1
         ORDER BY id DESC
       `;
-      params = [`%${q.toLowerCase()}%`];
+      params = [`%${q}%`];
     } else {
       sql = `
         SELECT id, roll_no, name, class_name, web_tech, dbms, os, data_structures, maths, total, percentage, grade, result, created_at
@@ -44,9 +44,9 @@ module.exports = async function handler(req, res) {
       count: result.rows.length,
     });
   } catch (err) {
-    console.error('Error in /api/records:', err);
+    console.error('API Error [/api/records]:', err);
     return res.status(500).json({
-      error: 'Failed to fetch student records from database.',
+      error: err.message || 'Failed to fetch student records from database.',
     });
   }
 };

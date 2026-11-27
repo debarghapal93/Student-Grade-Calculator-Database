@@ -2,7 +2,6 @@ const { query } = require('../lib/db');
 const { validateAndCalculate } = require('../lib/grade');
 
 module.exports = async function handler(req, res) {
-  // Set CORS headers for API accessibility
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -65,17 +64,18 @@ module.exports = async function handler(req, res) {
       student: savedRecord,
     });
   } catch (err) {
+    console.error('API Error [/api/calculate]:', err);
+
     // 23505 is PostgreSQL unique_violation error code
     if (err.code === '23505' || (err.message && err.message.toLowerCase().includes('unique'))) {
-      const roll = (req.body && req.body.roll_no) ? req.body.roll_no : '';
+      const roll = (req.body && req.body.roll_no) ? String(req.body.roll_no).trim() : '';
       return res.status(409).json({
         error: `A student with roll number "${roll}" already exists. Please use a unique roll number.`,
       });
     }
 
-    console.error('Error in /api/calculate:', err);
     return res.status(500).json({
-      error: 'An internal server error occurred while saving the record. Please check the database connection.',
+      error: err.message || 'An error occurred while saving the record to the database.',
     });
   }
 };

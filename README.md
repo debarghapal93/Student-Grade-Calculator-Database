@@ -64,12 +64,12 @@ The **Student Marks and Grade Calculator** is a responsive web application that 
 
 ## 🗄 Postgres Database Schema
 
-The schema is defined in [database.sql](database.sql):
+The schema is defined in [db/schema.sql](db/schema.sql) (and mirrored in [database.sql](database.sql)):
 
 ```sql
 CREATE TABLE IF NOT EXISTS students (
     id SERIAL PRIMARY KEY,
-    roll_no VARCHAR(20) NOT NULL UNIQUE,
+    roll_no VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
     class_name VARCHAR(50) NOT NULL,
     web_tech SMALLINT NOT NULL CHECK (web_tech >= 0 AND web_tech <= 100),
@@ -81,11 +81,14 @@ CREATE TABLE IF NOT EXISTS students (
     percentage NUMERIC(5,2) NOT NULL,
     grade VARCHAR(2) NOT NULL,
     result VARCHAR(4) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_students_roll_no ON students (roll_no);
+CREATE INDEX IF NOT EXISTS idx_students_name ON students (name);
 ```
 
-*(Note: The application automatically creates the `students` table if it does not already exist upon the first database query).*
+*(Note: The application executes this idempotent init step automatically once per cold start, ensuring the table exists without requiring manual SQL setup).*
 
 ---
 
@@ -139,22 +142,24 @@ git push origin main
 
 ## 💻 How to Run Locally
 
-### Option 1: Standard Node.js Runner (Instant & Zero Setup)
-1. Install dependencies:
+### Option 1: Standard Node.js Runner
+1. Pull your live Neon Postgres environment variables or set `DATABASE_URL` in `.env.local`:
+   ```bash
+   vercel env pull .env.local
+   ```
+2. Install dependencies:
    ```bash
    npm install
    ```
-2. Start the local server:
+3. Start the local server:
    ```bash
    npm start
    ```
-3. Open your browser at:
+4. Open your browser at:
    👉 **[http://localhost:3000](http://localhost:3000)**
 
-*(If `DATABASE_URL` is not set in `.env`, the local runner automatically falls back to an embedded SQLite database so you can test immediately offline).*
-
 ### Option 2: Using Vercel CLI
-1. Install Vercel CLI globally:
+1. Install Vercel CLI:
    ```bash
    npm i -g vercel
    ```
@@ -168,7 +173,7 @@ git push origin main
    vercel dev
    ```
 
-### Option 3: Run Automated Tests
+### Option 3: Run Automated PostgreSQL Tests
 ```bash
 npm test
 ```
@@ -179,12 +184,12 @@ npm test
 
 | Test Case | Inputs Tested | Expected Result | Verified Status |
 | :--- | :--- | :--- | :---: |
-| **Standard Valid Record** | Web: 78, DBMS: 85, OS: 69, DS: 72, Maths: 91 | Total: 395, 79.00%, Grade: A, Result: Pass | ✅ Passed |
-| **Subject Failure Rule** | Web: 34, DBMS: 95, OS: 90, DS: 88, Maths: 92 | Grade: F, Result: Fail (failed individual subject) | ✅ Passed |
-| **Out-of-Range (> 100)** | Web mark = 101 | Form submission rejected (400 Bad Request) | ✅ Passed |
-| **Negative Mark** | Web mark = -5 | Form submission rejected (400 Bad Request) | ✅ Passed |
-| **Duplicate Roll Number** | Same roll number submitted twice | HTTP 409 Conflict with friendly message | ✅ Passed |
-| **Dynamic Search** | Querying substring of name or roll number | Filtered records returned instantly | ✅ Passed |
+| **Standard Valid Record** | Web: 87, DBMS: 88, OS: 95, DS: 93, Maths: 79 | Total: 442, 88.40%, Grade: A+, Result: Pass | ✅ Passed |
+| **Subject Failure Rule** | Web: 34, DBMS: 95, OS: 92, DS: 90, Maths: 94 | Grade: F, Result: Fail (failed individual subject) | ✅ Passed |
+| **Out-of-Range (> 100)** | Web mark = 105 | Form submission rejected (400 Bad Request) | ✅ Passed |
+| **Negative Mark** | Web mark = -10 | Form submission rejected (400 Bad Request) | ✅ Passed |
+| **Duplicate Roll Number** | Same roll number submitted twice | HTTP 409 Conflict (PostgreSQL error 23505 caught) | ✅ Passed |
+| **Dynamic Search** | Querying substring with `ILIKE` | Filtered records returned instantly | ✅ Passed |
 | **Record Deletion** | Click Delete with confirmation prompt | Record removed from Postgres & table refreshed | ✅ Passed |
 
 ---

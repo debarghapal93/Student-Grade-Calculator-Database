@@ -9,8 +9,8 @@ node_modules/
 # Vercel build output
 .vercel
 
-# Local SQLite test database
-students.db
+# Local database / test artifacts
+*.db
 
 # Python & OS cache
 __pycache__/

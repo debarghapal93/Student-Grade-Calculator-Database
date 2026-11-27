@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
       body = {};
     }
 
-    const rawId = body.id || req.query.id;
+    const rawId = body.id || req.query?.id;
     const id = Number(rawId);
 
     if (!id || !Number.isInteger(id) || id <= 0) {
@@ -47,9 +47,9 @@ module.exports = async function handler(req, res) {
       deletedId: id,
     });
   } catch (err) {
-    console.error('Error in /api/delete:', err);
+    console.error('API Error [/api/delete]:', err);
     return res.status(500).json({
-      error: 'Failed to delete student record from database.',
+      error: err.message || 'Failed to delete student record from database.',
     });
   }
 };
