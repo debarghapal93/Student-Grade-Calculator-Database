@@ -1,0 +1,12 @@
+# SQLite database from local testing server
+students.db
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

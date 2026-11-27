@@ -1,0 +1,20 @@
+-- Student Marks and Grade Calculator Database Schema
+CREATE DATABASE IF NOT EXISTS student_db;
+USE student_db;
+
+CREATE TABLE IF NOT EXISTS students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    roll_no VARCHAR(20) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    class_name VARCHAR(50) NOT NULL,
+    web_tech TINYINT UNSIGNED NOT NULL,
+    dbms TINYINT UNSIGNED NOT NULL,
+    os TINYINT UNSIGNED NOT NULL,
+    data_structures TINYINT UNSIGNED NOT NULL,
+    maths TINYINT UNSIGNED NOT NULL,
+    total SMALLINT UNSIGNED NOT NULL,
+    percentage DECIMAL(5,2) NOT NULL,
+    grade VARCHAR(2) NOT NULL,
+    result VARCHAR(4) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

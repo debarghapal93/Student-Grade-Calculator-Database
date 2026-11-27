@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Marks and Grade Calculator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card">
+    <h1>Student Marks and Grade Calculator</h1>
+    <form id="markForm" action="calculate.php" method="post">
+      <label>Roll No 
+        <input type="text" name="roll_no" maxlength="20" placeholder="e.g. 21CS001" required>
+      </label>
+      <label>Name 
+        <input type="text" name="name" maxlength="100" placeholder="e.g. John Doe" required>
+      </label>
+      <label>Class 
+        <input type="text" name="class_name" maxlength="50" placeholder="e.g. CSE-A" required>
+      </label>
+      <label>Web Technology 
+        <input class="mark" type="number" name="web_tech" min="0" max="100" placeholder="0 - 100" required>
+      </label>
+      <label>Database Management 
+        <input class="mark" type="number" name="dbms" min="0" max="100" placeholder="0 - 100" required>
+      </label>
+      <label>Operating Systems 
+        <input class="mark" type="number" name="os" min="0" max="100" placeholder="0 - 100" required>
+      </label>
+      <label>Data Structures 
+        <input class="mark" type="number" name="data_structures" min="0" max="100" placeholder="0 - 100" required>
+      </label>
+      <label>Mathematics 
+        <input class="mark" type="number" name="maths" min="0" max="100" placeholder="0 - 100" required>
+      </label>
+
+      <div class="stats-preview">
+        <span>Total: <strong id="total">0</strong> / 500</span>
+        <span>Percentage: <strong id="percent">0.00</strong>%</span>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit">Calculate and Save</button>
+        <a href="results.php">View Records</a>
+      </div>
+    </form>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
